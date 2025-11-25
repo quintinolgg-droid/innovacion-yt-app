@@ -3,6 +3,7 @@ import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule, NgModel } from '@angular/forms';
 import { CommonModule, NgIf } from '@angular/common';
+import { User } from '../../models/User';
 
 @Component({
   selector: 'app-login',
@@ -40,6 +41,7 @@ export class Login {
         // Suponiendo que el backend devuelve un objeto con un 'token'
         if (response && response.token) {
           this.authService.saveToken(response.token);
+          this.authService.setUser(response.user.username);
           this.errorMessage = null;
           // **Navegación exitosa al componente 'home'**
           this.router.navigate(['home']);

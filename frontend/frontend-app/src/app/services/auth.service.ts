@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -37,11 +37,20 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
-  logout() {
-    localStorage.removeItem('token');
-  }
-
   isLogged(): boolean {
     return !!this.getToken();
+  }
+
+  setUser(emailOrUser: string): void {
+    localStorage.setItem('userName', emailOrUser);
+  }
+
+  getUser(): string | null {
+    return localStorage.getItem('userName');
+  }
+
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userName');
   }
 }
