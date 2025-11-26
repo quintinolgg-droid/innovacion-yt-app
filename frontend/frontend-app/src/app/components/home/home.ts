@@ -18,6 +18,7 @@ export class Home implements OnInit {
   favorites: FavoriteData[] = [];
   isLoadingVideos: boolean = false;
   isLoadingFavorites: boolean = false;
+  numberFav: number = 0;
 
   constructor(
     private authService: AuthService,
@@ -63,6 +64,7 @@ export class Home implements OnInit {
       next: (data) => {
         this.favorites = data;
         this.isLoadingFavorites = false;
+        this.numberFav = data.length;
         this.cd.detectChanges();
       },
       error: (err) => {
@@ -80,7 +82,7 @@ export class Home implements OnInit {
     const videoId = String(videoIdToMark);
     this.videoService.markAsFavorite(videoId).subscribe({
       next: (response) => {
-        console.log('Video marcado como favorito:', response);
+        this.showToast('¡Video agregado a favoritos!', 'success');
 
         // 1. Encontrar y mover el video
         const indexInVideos = this.videos.findIndex((v) => v.videoid === videoId);
@@ -92,11 +94,13 @@ export class Home implements OnInit {
 
           // 3. Agregar a la lista de favoritos (favorite = 1)
           this.favorites.unshift(videoToMove); // Añadir al inicio de favoritos
+
+          this.numberFav = this.favorites.length;
           this.cd.detectChanges();
         }
       },
       error: (err) => {
-        console.error('Error al marcar como favorito:', err);
+        this.showToast('Error al agregar a favoritos. Intente de nuevo.', 'error');
       },
     });
   }
@@ -109,7 +113,7 @@ export class Home implements OnInit {
     const videoId = String(videoIdToUnmark);
     this.videoService.unmarkAsFavorite(videoId).subscribe({
       next: (response) => {
-        console.log('Video desmarcado como favorito:', response);
+        this.showToast('Video eliminado de favoritos.', 'success');
 
         // 1. Encontrar y mover el video
         const indexInFavorites = this.favorites.findIndex((f) => f.videoid === videoId);
@@ -118,6 +122,7 @@ export class Home implements OnInit {
 
           // 2. Eliminar de la lista de favoritos (favorite = 1)
           this.favorites.splice(indexInFavorites, 1);
+          this.numberFav = this.favorites.length;
 
           // 3. Agregar a la lista de videos disponibles (favorite = 0)
           this.videos.unshift(videoToMove); // Añadir al inicio de videos
@@ -125,7 +130,7 @@ export class Home implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Error al desmarcar como favorito:', err);
+        this.showToast('Error al desmarcar el video. Intente de nuevo.', 'error');
       },
     });
   }
@@ -180,6 +185,7 @@ export class Home implements OnInit {
       next: (data) => {
         this.favorites = [...data];
         this.isLoadingFavorites = false;
+        this.numberFav = data.length;
         this.cd.detectChanges();
       },
       error: (err) => {
@@ -188,5 +194,32 @@ export class Home implements OnInit {
         this.favorites = [];
       },
     });
+  }
+
+  /**
+   * Muestra una notificación Toast de Bootstrap.
+   * @param message Mensaje a mostrar.
+   * @param type 'success' o 'error'.
+   */
+  showToast(message: string, type: 'success' | 'error'): void {
+    const toastId = type === 'success' ? 'liveToastSuccess' : 'liveToastError';
+    const messageElementId = type === 'success' ? 'toast-success-message' : 'toast-error-message';
+
+    // 1. Actualizar el texto del mensaje
+    const messageElement = document.getElementById(messageElementId);
+    if (messageElement) {
+      messageElement.textContent = message;
+    }
+
+    // 2. Encontrar el elemento Toast de Bootstrap
+    const toastElement = document.getElementById(toastId);
+
+    // 3. Mostrar el Toast usando la API global de Bootstrap
+    if (toastElement) {
+      // Usamos el objeto global 'bootstrap' para crear y mostrar el Toast.
+      // (window as any) evita errores de TypeScript si 'bootstrap' no está tipado globalmente.
+      const bsToast = new (window as any).bootstrap.Toast(toastElement);
+      bsToast.show();
+    }
   }
 }
