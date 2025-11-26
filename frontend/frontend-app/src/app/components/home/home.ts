@@ -222,4 +222,48 @@ export class Home implements OnInit {
       bsToast.show();
     }
   }
+
+  copyLink(url: string): void {
+    // 1. Verificar si el navegador soporta la API de portapapeles
+    if (navigator.clipboard) {
+      // 2. Usar la API moderna para escribir texto
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          // Notificación de éxito
+          this.showToast('¡Enlace copiado al portapapeles!', 'success');
+        })
+        .catch((err) => {
+          // En caso de error (p. ej., permisos denegados)
+          console.error('Error al intentar copiar el enlace:', err);
+          this.showToast('No se pudo copiar el enlace. Intenta manualmente.', 'error');
+        });
+    } else {
+      // 3. Fallback para navegadores antiguos
+      this.fallbackCopyTextToClipboard(url);
+    }
+  }
+
+  //Para navegadores muy antiguos
+  fallbackCopyTextToClipboard(text: string) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+
+    // Hacer el campo invisible
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      this.showToast('¡Enlace copiado al portapapeles!', 'success');
+    } catch (err) {
+      this.showToast('No se pudo copiar el enlace. Navegador no compatible.', 'error');
+    }
+
+    document.body.removeChild(textArea);
+  }
 }

@@ -92,12 +92,20 @@
                     {{ video.title }}
                   </h5>
                 </a>
-                <div class="mt-auto pt-2">
+                <div class="mt-auto pt-2 d-flex">
                   <button
-                    class="btn btn-outline-danger w-100"
+                    class="btn btn-outline-danger w-100 me-1"
                     (click)="markAsFavorite(video.videoid)"
                   >
                     <i class="bi bi-heart"></i> Añadir a Favoritos
+                  </button>
+
+                  <button
+                    class="btn btn-outline-primary"
+                    title="Copiar enlace"
+                    (click)="copyLink(video.url)"
+                  >
+                    <i class="bi bi-link"></i>
                   </button>
                 </div>
               </div>
@@ -148,9 +156,16 @@
                     {{ fav.title }}
                   </h5>
                 </a>
-                <div class="mt-auto pt-2">
-                  <button class="btn btn-danger w-100" (click)="unmarkAsFavorite(fav.videoid)">
+                <div class="d-flex mt-auto pt-2">
+                  <button class="btn btn-danger w-100 me-1" (click)="unmarkAsFavorite(fav.videoid)">
                     <i class="bi bi-heart-fill"></i> Desmarcar
+                  </button>
+                  <button
+                    class="btn btn-outline-primary"
+                    title="Copiar enlace"
+                    (click)="copyLink(fav.url)"
+                  >
+                    <i class="bi bi-link"></i>
                   </button>
                 </div>
               </div>
