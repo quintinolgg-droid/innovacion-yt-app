@@ -1,9 +1,10 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { User } from '../../models/User';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RecaptchaService } from '../../services/recaptcha.service';
 
 declare const grecaptcha: any;
 
@@ -23,16 +24,15 @@ export class Register implements OnInit {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private recaptchaService: RecaptchaService
   ) {}
 
-  recaptchaToken: string | null = null;
-
   ngOnInit(): void {
-    (window as any).onCaptchaResolved = (token: string) => {
-      this.recaptchaToken = token;
-      console.log('CAPTCHA OK:', token);
-    };
+    if (isPlatformBrowser(this.platformId)) {
+      this.recaptchaService.initializeCaptchaCallback(this.cd);
+    }
   }
 
   newRegister(): void {
@@ -41,15 +41,16 @@ export class Register implements OnInit {
       this.cd.detectChanges();
       return;
     }
+    const token = this.recaptchaService.getResolvedToken();
 
-    if (!this.recaptchaToken) {
+    if (!token) {
       this.errorMessage = 'Por favor completa el reCAPTCHA.';
       return;
     }
 
     const data = {
       ...this.user,
-      recaptcha: this.recaptchaToken,
+      recaptcha: token,
     };
 
     this.authService.register(this.user).subscribe({
@@ -59,6 +60,7 @@ export class Register implements OnInit {
       },
       error: (err) => {
         this.errorMessage = err.error?.message || 'Error al registrar.';
+        this.recaptchaService.resetCaptcha();
         this.cd.detectChanges();
       },
     });

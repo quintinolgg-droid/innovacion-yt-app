@@ -4,16 +4,17 @@ import { Router } from '@angular/router';
 import { FavoriteData, VideoService } from '../../services/video.service';
 import { CommonModule, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UiUtilsService } from '../../services/ui-utils.service';
+import { Nav } from '../section/nav/nav';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, NgFor, NgIf, FormsModule],
+  imports: [CommonModule, NgFor, NgIf, FormsModule, Nav],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
 export class Home implements OnInit {
-  userMail: string | null = null;
   videos: FavoriteData[] = [];
   favorites: FavoriteData[] = [];
   isLoadingVideos: boolean = false;
@@ -24,7 +25,8 @@ export class Home implements OnInit {
     private authService: AuthService,
     private router: Router,
     private videoService: VideoService,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
+    protected uiUtilService: UiUtilsService
   ) {}
 
   ngOnInit(): void {
@@ -33,18 +35,12 @@ export class Home implements OnInit {
       return;
     }
 
-    this.userMail = this.authService.getUser();
-
     this.loadVideos();
 
     this.cd.detectChanges();
   }
 
-  logOut(): void {
-    this.authService.logout(); // Usamos la inyección correcta
-    this.router.navigate(['']);
-  }
-
+  //Cargar videos desde las APIS
   loadVideos(): void {
     this.isLoadingVideos = true;
     this.videoService.getVideos().subscribe({
@@ -76,61 +72,53 @@ export class Home implements OnInit {
 
   /**
    *  Marca un video como favorito (favorite = 1).
-   * Lo mueve del array 'videos' al array 'favorites'.
    */
   markAsFavorite(videoIdToMark: string | number): void {
     const videoId = String(videoIdToMark);
     this.videoService.markAsFavorite(videoId).subscribe({
       next: (response) => {
-        this.showToast('¡Video agregado a favoritos!', 'success');
+        this.uiUtilService.showToast('¡Video agregado a favoritos!', 'success');
 
-        // 1. Encontrar y mover el video
         const indexInVideos = this.videos.findIndex((v) => v.videoid === videoId);
         if (indexInVideos !== -1) {
           const videoToMove = this.videos[indexInVideos];
 
-          // 2. Eliminar de la lista de videos disponibles (favorite = 0)
           this.videos.splice(indexInVideos, 1);
 
-          // 3. Agregar a la lista de favoritos (favorite = 1)
-          this.favorites.unshift(videoToMove); // Añadir al inicio de favoritos
+          this.favorites.unshift(videoToMove);
 
           this.numberFav = this.favorites.length;
           this.cd.detectChanges();
         }
       },
       error: (err) => {
-        this.showToast('Error al agregar a favoritos. Intente de nuevo.', 'error');
+        this.uiUtilService.showToast('Error al agregar a favoritos. Intente de nuevo.', 'error');
       },
     });
   }
 
   /**
    *  Desmarca un video como favorito (favorite = 0).
-   * Lo mueve del array 'favorites' al array 'videos'.
    */
   unmarkAsFavorite(videoIdToUnmark: string | number): void {
     const videoId = String(videoIdToUnmark);
     this.videoService.unmarkAsFavorite(videoId).subscribe({
       next: (response) => {
-        this.showToast('Video eliminado de favoritos.', 'success');
+        this.uiUtilService.showToast('Video eliminado de favoritos.', 'success');
 
-        // 1. Encontrar y mover el video
         const indexInFavorites = this.favorites.findIndex((f) => f.videoid === videoId);
         if (indexInFavorites !== -1) {
           const videoToMove = this.favorites[indexInFavorites];
 
-          // 2. Eliminar de la lista de favoritos (favorite = 1)
           this.favorites.splice(indexInFavorites, 1);
           this.numberFav = this.favorites.length;
 
-          // 3. Agregar a la lista de videos disponibles (favorite = 0)
-          this.videos.unshift(videoToMove); // Añadir al inicio de videos
+          this.videos.unshift(videoToMove);
           this.cd.detectChanges();
         }
       },
       error: (err) => {
-        this.showToast('Error al desmarcar el video. Intente de nuevo.', 'error');
+        this.uiUtilService.showToast('Error al desmarcar el video. Intente de nuevo.', 'error');
       },
     });
   }
@@ -141,13 +129,11 @@ export class Home implements OnInit {
 
   /**
    * Busca videos disponibles por título usando el servicio.
-   * Actualiza this.videos con los resultados.
    */
   searchVideos(): void {
     const query = this.searchTermVideos.trim();
 
     if (query.length === 0) {
-      // Si la búsqueda está vacía, recarga la lista completa
       this.loadVideos();
       return;
     }
@@ -161,22 +147,20 @@ export class Home implements OnInit {
       },
       error: (err) => {
         console.error('Error al buscar videos:', err);
-        this.isLoadingVideos = false; // Opcional: Mostrar un array vacío en caso de error de búsqueda
+        this.isLoadingVideos = false;
         this.videos = [];
       },
     });
   }
+
   /**
    * Busca favoritos por título usando el servicio.
-   * Actualiza this.favorites con los resultados.
    */
-
   searchFavorites(): void {
     const query = this.searchTermFavorites.trim();
 
     if (query.length === 0) {
-      // Si la búsqueda está vacía, recarga la lista completa
-      this.loadVideos(); // loadVideos carga tanto videos como favoritos
+      this.loadVideos();
       return;
     }
 
@@ -190,80 +174,9 @@ export class Home implements OnInit {
       },
       error: (err) => {
         console.error('Error al buscar favoritos:', err);
-        this.isLoadingFavorites = false; // Opcional: Mostrar un array vacío en caso de error de búsqueda
+        this.isLoadingFavorites = false;
         this.favorites = [];
       },
     });
-  }
-
-  /**
-   * Muestra una notificación Toast de Bootstrap.
-   * @param message Mensaje a mostrar.
-   * @param type 'success' o 'error'.
-   */
-  showToast(message: string, type: 'success' | 'error'): void {
-    const toastId = type === 'success' ? 'liveToastSuccess' : 'liveToastError';
-    const messageElementId = type === 'success' ? 'toast-success-message' : 'toast-error-message';
-
-    // 1. Actualizar el texto del mensaje
-    const messageElement = document.getElementById(messageElementId);
-    if (messageElement) {
-      messageElement.textContent = message;
-    }
-
-    // 2. Encontrar el elemento Toast de Bootstrap
-    const toastElement = document.getElementById(toastId);
-
-    // 3. Mostrar el Toast usando la API global de Bootstrap
-    if (toastElement) {
-      // Usamos el objeto global 'bootstrap' para crear y mostrar el Toast.
-      // (window as any) evita errores de TypeScript si 'bootstrap' no está tipado globalmente.
-      const bsToast = new (window as any).bootstrap.Toast(toastElement);
-      bsToast.show();
-    }
-  }
-
-  copyLink(url: string): void {
-    // 1. Verificar si el navegador soporta la API de portapapeles
-    if (navigator.clipboard) {
-      // 2. Usar la API moderna para escribir texto
-      navigator.clipboard
-        .writeText(url)
-        .then(() => {
-          // Notificación de éxito
-          this.showToast('¡Enlace copiado al portapapeles!', 'success');
-        })
-        .catch((err) => {
-          // En caso de error (p. ej., permisos denegados)
-          console.error('Error al intentar copiar el enlace:', err);
-          this.showToast('No se pudo copiar el enlace. Intenta manualmente.', 'error');
-        });
-    } else {
-      // 3. Fallback para navegadores antiguos
-      this.fallbackCopyTextToClipboard(url);
-    }
-  }
-
-  //Para navegadores muy antiguos
-  fallbackCopyTextToClipboard(text: string) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-
-    // Hacer el campo invisible
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
-    document.body.appendChild(textArea);
-
-    textArea.focus();
-    textArea.select();
-
-    try {
-      document.execCommand('copy');
-      this.showToast('¡Enlace copiado al portapapeles!', 'success');
-    } catch (err) {
-      this.showToast('No se pudo copiar el enlace. Navegador no compatible.', 'error');
-    }
-
-    document.body.removeChild(textArea);
   }
 }

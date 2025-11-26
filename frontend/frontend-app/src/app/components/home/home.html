@@ -1,21 +1,5 @@
 <div class="d-flex flex-column vh-100">
-  <header class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-    <div class="container-fluid">
-      <a class="navbar-brand fw-bold" href="#">VideoApp | Dashboard</a>
-
-      <div class="d-flex align-items-center">
-        <span class="navbar-text me-3 text-info d-none d-sm-inline-block"
-          >Hola, {{ userMail }}</span
-        >
-
-        <button (click)="logOut()" class="btn btn-outline-light btn-sm">
-          <i class="bi bi-box-arrow-right"></i>
-          <span class="d-none d-md-inline-block ms-1">Cerrar Sesión</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
+  <app-nav />
   <main class="container-fluid flex-grow-1 p-4 bg-light">
     <h2 class="mb-4">Área de Videos</h2>
 
@@ -103,7 +87,7 @@
                   <button
                     class="btn btn-outline-primary"
                     title="Copiar enlace"
-                    (click)="copyLink(video.url)"
+                    (click)="uiUtilService.copyLink(video.url)"
                   >
                     <i class="bi bi-link"></i>
                   </button>
@@ -163,7 +147,7 @@
                   <button
                     class="btn btn-outline-primary"
                     title="Copiar enlace"
-                    (click)="copyLink(fav.url)"
+                    (click)="uiUtilService.copyLink(fav.url)"
                   >
                     <i class="bi bi-link"></i>
                   </button>

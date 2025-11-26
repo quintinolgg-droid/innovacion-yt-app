@@ -1,0 +1,14 @@
+<header class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="#">VideoApp | Dashboard</a>
+
+    <div class="d-flex align-items-center">
+      <span class="navbar-text me-3 text-info d-none d-sm-inline-block">Hola, {{ userMail }}</span>
+
+      <button (click)="logOut()" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="d-none d-md-inline-block ms-1">Cerrar Sesión</span>
+      </button>
+    </div>
+  </div>
+</header>
