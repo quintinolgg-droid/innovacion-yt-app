@@ -3,8 +3,6 @@ import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule, NgModel } from '@angular/forms';
 import { CommonModule, NgIf } from '@angular/common';
-import { User } from '../../models/User';
-import { HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-login',
@@ -16,10 +14,10 @@ import { HttpClientModule } from '@angular/common/http';
 export class Login implements OnInit {
   // 1. Modelo de datos para el formulario
   credentials = {
-    emailOrUser: '', // Se mapeará al input de usuario/email
+    emailOrUser: '',
     password: '',
   };
-  errorMessage: string | null = null; // Para mostrar errores
+  errorMessage: string | null = null;
 
   // 2. Inyectar Router
   constructor(
@@ -36,8 +34,6 @@ export class Login implements OnInit {
 
   // 3. Implementar la lógica de login
   loging(): void {
-    // Aquí puedes usar tu objeto 'credentials' directamente,
-    // o mapearlo a la estructura que tu backend espera
     const loginData = {
       emailOrUser: this.credentials.emailOrUser,
       password: this.credentials.password,
@@ -45,7 +41,6 @@ export class Login implements OnInit {
 
     this.authService.login(loginData).subscribe({
       next: (response) => {
-        // Suponiendo que el backend devuelve un objeto con un 'token'
         if (response && response.token) {
           this.authService.saveToken(response.token);
           this.authService.setUser(response.user.username);
@@ -53,15 +48,12 @@ export class Login implements OnInit {
           // **Navegación exitosa al componente 'home'**
           this.router.navigate(['home']);
         } else {
-          // Si el servidor responde 200 pero sin token (algo inusual)
           this.errorMessage = 'Respuesta del servidor inválida.';
           this.cd.detectChanges();
         }
       },
       error: (err) => {
-        // Manejo de errores HTTP (ej: 401 Unauthorized)
         console.error('Error al iniciar sesión:', err);
-        // Mostrar un mensaje de error al usuario
         this.errorMessage =
           err.error?.message || 'Error al iniciar sesión. Verifica tus credenciales.';
 

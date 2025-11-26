@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
-import { User } from '../models/User';
+import { User } from '../../models/User';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -15,9 +15,9 @@ declare const grecaptcha: any;
   styleUrl: './register.css',
 })
 export class Register implements OnInit {
-  user: User = new User(); // ← EXISTE
-  errorMessage: string | null = null; // ← EXISTE
-  confirmarConstrasena: string = ''; // ← EXISTE
+  user: User = new User();
+  errorMessage: string | null = null;
+  confirmarConstrasena: string = '';
   siteKey = '6LdFhBcsAAAAAPGT5qCyx4novsFCXrMtUBWs-hO4';
 
   constructor(

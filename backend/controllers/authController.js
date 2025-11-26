@@ -53,7 +53,6 @@ const sendEmail = async (options) => {
   });
 
   const mailOptions = {
-    // 🔑 CAMBIO CLAVE: Usar la dirección verificada aquí
     from: `Tu Aplicación <${VERIFIED_EMAIL}>`,
     to: options.email,
     subject: options.subject,
@@ -127,7 +126,7 @@ exports.login = async (req, res) => {
     res.json({
       token,
       user: {
-        id: user.id, // 🔑 Usar user.id
+        id: user.id,
         username: user.username,
         email: user.email,
       },

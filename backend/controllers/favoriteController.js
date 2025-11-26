@@ -1,15 +1,10 @@
-// controllers/favoriteController.js
-
-const { pool } = require("../config/db"); // 🔑 Importamos el pool de Postgres (¡NO importamos el modelo Favorite!)
+const { pool } = require("../config/db");
 
 // --- AÑADIR FAVORITO (INSERT) ---
 exports.addFavorite = async (req, res) => {
   try {
     const { videoId, title, thumbnail, url } = req.body;
-    // El ID del usuario (req.user) ahora es el ID entero (INTEGER) de Postgres
 
-    // 1. Verificar si existe (Postgres: SELECT)
-    // Usamos la restricción UNIQUE que pusimos en la tabla: user_id y video_id
     const checkResult = await pool.query(
       "SELECT id FROM favorites WHERE user_id = $1 AND video_id = $2",
       [req.user, videoId]
@@ -19,8 +14,6 @@ exports.addFavorite = async (req, res) => {
       return res.status(400).json({ msg: "Este video ya está en favoritos" });
     }
 
-    // 2. Insertar nuevo favorito (Postgres: INSERT)
-    // RETURNING id nos devuelve el ID (SERIAL PRIMARY KEY) del nuevo registro
     const insertResult = await pool.query(
       "INSERT INTO favorites (user_id, video_id, title, thumbnail, url) VALUES ($1, $2, $3, $4, $5) RETURNING id, video_id, title, thumbnail, url",
       [req.user, videoId, title, thumbnail, url]
@@ -41,8 +34,27 @@ exports.getFavorites = async (req, res) => {
     // 1. Obtener todos los favoritos del usuario (Postgres: SELECT)
     const result = await pool.query(
       // Seleccionamos las columnas tal como las necesita el frontend
-      "SELECT id, video_id, title, thumbnail, url FROM favorites WHERE user_id = $1 ORDER BY id DESC",
+      "SELECT id, video_id AS videoid, title, thumbnail, url FROM favorites  WHERE favorite = 1 AND user_id = $1 ORDER BY id DESC",
       [req.user]
+    );
+
+    // En Postgres, los resultados están en .rows
+    const favs = result.rows;
+
+    res.json(favs);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error en servidor" });
+  }
+};
+
+// --- OBTENER TODOS LSO VIDEOS (SELECT) ---
+exports.getVideos = async (req, res) => {
+  try {
+    // 1. Obtener todos los favoritos del usuario (Postgres: SELECT)
+    const result = await pool.query(
+      // Seleccionamos las columnas tal como las necesita el frontend
+      "SELECT id, video_id AS videoid, title, thumbnail, url FROM favorites WHERE favorite = 0"
     );
 
     // En Postgres, los resultados están en .rows
@@ -82,4 +94,66 @@ exports.removeFavorite = async (req, res) => {
   }
 };
 
-// module.exports = { addFavorite, getFavorites, removeFavorite }; // Asegúrate de exportar
+// --- MARCAR COMO FAVORITO (UPDATE: favorite = 1) ---
+exports.markAsFavorite = async (req, res) => {
+  try {
+    const { videoId } = req.body;
+
+    if (!videoId) {
+      return res.status(400).json({ msg: "Se requiere el videoId" });
+    }
+
+    // 1. Actualizar el estado 'favorite' a 1.
+    // Usamos RETURNING * para obtener el registro actualizado.
+    const result = await pool.query(
+      "UPDATE favorites SET favorite = 1 WHERE user_id = $1 AND video_id = $2 RETURNING *",
+      [req.user, videoId]
+    );
+
+    const updatedRow = result.rows.length;
+
+    if (updatedRow === 0) {
+      // Si no se encontró el video, puede que no haya sido agregado por el usuario previamente.
+      return res.status(404).json({
+        msg: "Video no encontrado en tu lista para marcar como favorito",
+      });
+    }
+
+    res.json({ msg: "Video marcado como favorito", fav: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error en servidor" });
+  }
+};
+
+// --- DESMARCAR COMO FAVORITO (UPDATE: favorite = 1) ---
+exports.unmarkAsFavorite = async (req, res) => {
+  try {
+    const { videoId } = req.body;
+
+    if (!videoId) {
+      return res.status(400).json({ msg: "Se requiere el videoId" });
+    }
+
+    // 1. Actualizar el estado 'favorite' a 1.
+    // Usamos RETURNING * para obtener el registro actualizado.
+    const result = await pool.query(
+      "UPDATE favorites SET favorite = 0 WHERE user_id = $1 AND video_id = $2 RETURNING *",
+      [req.user, videoId]
+    );
+
+    const updatedRow = result.rows.length;
+
+    if (updatedRow === 0) {
+      // Si no se encontró el video, puede que no haya sido agregado por el usuario previamente.
+      return res
+        .status(404)
+        .json({ msg: "Video no encontrado en tu lista para desmarcar" });
+    }
+
+    res.json({ msg: "Video marcado como favorito", fav: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error en servidor" });
+  }
+};

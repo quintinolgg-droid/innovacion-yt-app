@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { Login } from './components/login/login';
 import { ForgotPassword } from './components/forgot-password/forgot-password';
 import { Home } from './components/home/home';
-import { Register } from './register/register';
+import { Register } from './components/register/register';
 import { ResetPassword } from './components/reset-password/reset-password';
 
 export const routes: Routes = [

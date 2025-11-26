@@ -4,6 +4,7 @@
       <a class="navbar-brand fw-bold" href="#">VideoApp | Dashboard</a>
 
       <div class="d-flex">
+        <!-- Muestra el correo del usuario -->
         <span class="navbar-text me-3 text-info"> Hola, {{ userMail }}</span>
 
         <button (click)="logOut()" class="btn btn-outline-light btn-sm">
@@ -61,24 +62,20 @@
           <button class="btn btn-primary" type="button">Buscar</button>
         </div>
 
-        <div class="card mb-2">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <span>Título del Video 1</span>
-            <button class="btn btn-outline-danger btn-sm">
-              <i class="bi bi-heart"></i> Favorito
-            </button>
-          </div>
-        </div>
-        <div class="card mb-2">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <span>Título del Video 2 (Otro ejemplo)</span>
-            <button class="btn btn-outline-danger btn-sm">
-              <i class="bi bi-heart"></i> Favorito
-            </button>
+        <div *ngIf="!isLoadingVideos">
+          <div *ngFor="let video of videos" class="card mb-2 bg-light">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <span class="fw-bold">{{ video.title }}</span>
+
+              <button class="btn btn-outline-danger btn-sm" (click)="markAsFavorite(video.videoid)">
+                <i class="bi bi-heart"></i> Favorito
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- PESTAÑA DE FAVORITOS (Implementación de *ngFor y *ngIf) -->
       <div class="tab-pane fade" id="favoritos" role="tabpanel" aria-labelledby="favoritos-tab">
         <h3 class="mb-3">Mis Videos Favoritos</h3>
 
@@ -87,20 +84,23 @@
           <button class="btn btn-primary" type="button">Buscar</button>
         </div>
 
-        <div class="card mb-2 bg-light">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <span class="fw-bold">Video Favorito A</span>
-            <button class="btn btn-danger btn-sm">
-              <i class="bi bi-heart-fill"></i> Desmarcar
-            </button>
-          </div>
+        <!-- Mensajes de estado -->
+        <div *ngIf="isLoadingFavorites" class="alert alert-info">Cargando favoritos...</div>
+
+        <div *ngIf="!isLoadingFavorites && favorites.length === 0" class="alert alert-warning">
+          Aún no tienes videos guardados como favoritos.
         </div>
-        <div class="card mb-2 bg-light">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <span class="fw-bold">Video Favorito B</span>
-            <button class="btn btn-danger btn-sm">
-              <i class="bi bi-heart-fill"></i> Desmarcar
-            </button>
+
+        <!-- Lista de Favoritos -->
+        <div *ngIf="!isLoadingFavorites">
+          <div *ngFor="let fav of favorites" class="card mb-2 bg-light">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <span class="fw-bold">{{ fav.title }}</span>
+
+              <button class="btn btn-danger btn-sm" (click)="unmarkAsFavorite(fav.videoid)">
+                <i class="bi bi-heart-fill"></i> Desmarcar
+              </button>
+            </div>
           </div>
         </div>
       </div>
