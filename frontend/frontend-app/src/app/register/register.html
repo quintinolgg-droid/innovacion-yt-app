@@ -83,8 +83,11 @@
       </div>
 
       <div class="mb-4">
-        <re-captcha (resolved)="resolved($event)" class="d-flex justify-content-center">
-        </re-captcha>
+        <div
+          class="g-recaptcha d-flex justify-content-center"
+          [attr.data-sitekey]="siteKey"
+          data-callback="onCaptchaResolved"
+        ></div>
       </div>
 
       <div *ngIf="errorMessage" class="alert alert-danger mb-3" role="alert">

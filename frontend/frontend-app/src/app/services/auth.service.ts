@@ -1,14 +1,23 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private apiUrl = 'http://localhost:4000/api/auth';
+  private isBrowser: boolean;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    // 🔑 Inyectar PLATFORM_ID para determinar el entorno
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    // 🔑 Determinar el entorno en el constructor
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   forgotPassword(email: string): Observable<any> {
     const url = `${this.apiUrl}/forgot-password`; // <- Necesitas crear esta ruta en Express
@@ -30,27 +39,48 @@ export class AuthService {
   }
 
   saveToken(token: string) {
-    localStorage.setItem('token', token);
+    if (this.isBrowser) {
+      // 🔑 Condición
+      localStorage.setItem('token', token);
+    }
   }
 
   getToken() {
-    return localStorage.getItem('token');
+    if (this.isBrowser) {
+      // 🔑 Condición
+      return localStorage.getItem('token');
+    }
+    return null; // Devuelve null si no está en el navegador
   }
 
   isLogged(): boolean {
-    return !!this.getToken();
+    // 🔑 Condición y lógica de verificación
+    if (this.isBrowser) {
+      return !!this.getToken();
+    }
+    return false; // Nunca estará logueado en el servidor
   }
 
   setUser(emailOrUser: string): void {
-    localStorage.setItem('userName', emailOrUser);
+    if (this.isBrowser) {
+      // 🔑 Condición
+      localStorage.setItem('userName', emailOrUser);
+    }
   }
 
   getUser(): string | null {
-    return localStorage.getItem('userName');
+    if (this.isBrowser) {
+      // 🔑 Condición
+      return localStorage.getItem('userName');
+    }
+    return null; // Devuelve null si no está en el navegador
   }
 
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userName');
+    if (this.isBrowser) {
+      // 🔑 Condición
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+    }
   }
 }

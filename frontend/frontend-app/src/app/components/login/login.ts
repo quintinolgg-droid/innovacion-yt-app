@@ -1,9 +1,10 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule, NgModel } from '@angular/forms';
 import { CommonModule, NgIf } from '@angular/common';
 import { User } from '../../models/User';
+import { HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-login',
@@ -12,7 +13,7 @@ import { User } from '../../models/User';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class Login {
+export class Login implements OnInit {
   // 1. Modelo de datos para el formulario
   credentials = {
     emailOrUser: '', // Se mapeará al input de usuario/email
@@ -26,6 +27,12 @@ export class Login {
     private router: Router,
     private cd: ChangeDetectorRef
   ) {}
+
+  ngOnInit(): void {
+    if (this.authService.isLogged()) {
+      this.router.navigate(['/home']);
+    }
+  }
 
   // 3. Implementar la lógica de login
   loging(): void {

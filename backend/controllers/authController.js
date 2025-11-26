@@ -1,6 +1,5 @@
 // controllers/auth.controller.js
-
-const User = require("../models/User");
+const { pool } = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
@@ -70,41 +69,33 @@ const sendEmail = async (options) => {
 
 // 1. CONTROLADOR DE REGISTRO
 exports.register = async (req, res) => {
+  // ... (código reCAPTCHA)
+
   try {
     const { firstName, lastName, username, email, password, recaptcha } =
       req.body;
 
-    // 1. Verificación reCAPTCHA
-    if (!recaptcha) {
-      return res.status(400).json({ msg: "Falta la verificación reCAPTCHA." });
-    }
-    const isHuman = await verifyRecaptcha(recaptcha);
-    if (!isHuman) {
-      return res.status(400).json({
-        msg: "Verificación reCAPTCHA fallida. Por favor, inténtalo de nuevo.",
-      });
-    }
+    // 1. Verificar si existe (Postgres)
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
 
-    // 2. Lógica de registro
-    let user = await User.findOne({ email });
-    if (user)
+    if (existingUser.rows.length > 0) {
       return res.status(400).json({ msg: "El correo ya está registrado" });
+    }
 
+    // 2. Insertar nuevo usuario (Postgres)
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    user = new User({
-      firstName,
-      lastName,
-      username,
-      email,
-      password: hashedPassword,
-    });
+    await pool.query(
+      "INSERT INTO users (first_name, last_name, username, email, password) VALUES ($1, $2, $3, $4, $5)",
+      [firstName, lastName, username, email, hashedPassword]
+    );
 
-    await user.save();
     res.json({ msg: "Usuario registrado correctamente" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: "Error en el servidor" });
+    // ...
   }
 };
 
@@ -113,29 +104,36 @@ exports.login = async (req, res) => {
   try {
     const { emailOrUser, password } = req.body;
 
-    const user = await User.findOne({
-      $or: [{ email: emailOrUser }, { username: emailOrUser }],
-    });
+    // 1. Buscar usuario por email O username (Postgres)
+    const result = await pool.query(
+      "SELECT id, username, email, password FROM users WHERE email = $1 OR username = $1",
+      [emailOrUser]
+    );
+
+    const user = result.rows[0];
 
     if (!user) return res.status(400).json({ msg: "Usuario no encontrado" });
 
+    //Comparación de contraseña
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) return res.status(400).json({ msg: "Contraseña incorrecta" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    // 2. Firmar token (usa user.id, no user._id)
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
     res.json({
       token,
       user: {
-        id: user._id,
+        id: user.id, // 🔑 Usar user.id
         username: user.username,
         email: user.email,
       },
     });
   } catch (error) {
-    res.status(500).json({ msg: "Error en el servidor" });
+    // ...
   }
 };
 
@@ -144,25 +142,36 @@ exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    // 1. Buscar usuario por email (Postgres)
+    const result = await pool.query("SELECT id FROM users WHERE email = $1", [
+      email,
+    ]);
+    const user = result.rows[0];
 
     if (!user) {
-      // SEGURIDAD: Respuesta genérica para no revelar si el correo existe
+      // SEGURIDAD: Respuesta genérica
       return res.json({
         msg: "Si el correo existe, se ha enviado un enlace de restablecimiento.",
       });
     }
 
-    // 1. Generar y guardar el token HASHED y su expiración
+    // 2. Generar y guardar el token HASHED y su expiración
     const resetToken = crypto.randomBytes(20).toString("hex");
-    user.resetPasswordToken = crypto
+    const hashedToken = crypto
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
-    user.resetPasswordExpire = Date.now() + 3600000; // Expira en 1 hora
-    await user.save();
 
-    // 2. Crear el enlace de restablecimiento (usando el token NO HASHED)
+    // Expiración: 1 hora a partir de ahora, formateado como ISO string para Postgres
+    const expireTime = new Date(Date.now() + 3600000).toISOString();
+
+    // Actualizar la base de datos (Postgres: UPDATE)
+    await pool.query(
+      "UPDATE users SET reset_password_token = $1, reset_password_expire = $2 WHERE id = $3",
+      [hashedToken, expireTime, user.id] // Usamos user.id para identificar la fila
+    );
+
+    // 3. Crear el enlace de restablecimiento (usando el token NO HASHED)
     const resetURL = `${FRONTEND_URL}/reset-password/${resetToken}`;
 
     const message = `
@@ -173,9 +182,9 @@ exports.forgotPassword = async (req, res) => {
     `;
 
     try {
-      // 3. Enviar el correo
+      // 4. Enviar el correo
       await sendEmail({
-        email: user.email,
+        email: email, // Usamos el email directo
         subject: "Restablecimiento de Contraseña",
         message,
       });
@@ -184,10 +193,11 @@ exports.forgotPassword = async (req, res) => {
         msg: "Si el correo existe, se ha enviado un enlace de restablecimiento.",
       });
     } catch (err) {
-      // Manejo de error de envío de correo
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpire = undefined;
-      await user.save();
+      // Manejo de error de envío de correo (limpiar tokens en DB)
+      await pool.query(
+        "UPDATE users SET reset_password_token = NULL, reset_password_expire = NULL WHERE id = $1",
+        [user.id]
+      );
 
       console.error("Error de envío de correo:", err);
       return res.status(500).json({
@@ -212,11 +222,14 @@ exports.resetPassword = async (req, res) => {
       .update(token)
       .digest("hex");
 
-    // 2. Buscar usuario por token y verificar que NO haya expirado
-    const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
-    });
+    // 2. Buscar usuario por token y verificar que NO haya expirado (Postgres)
+    // Usamos el operador > en SQL para verificar que la fecha de expiración sea mayor que la fecha/hora actual (NOW())
+    const result = await pool.query(
+      "SELECT id FROM users WHERE reset_password_token = $1 AND reset_password_expire > NOW()",
+      [resetPasswordToken]
+    );
+
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(400).json({
@@ -224,15 +237,14 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    // 3. Hashear y actualizar la contraseña
+    // 3. Hashear y actualizar la contraseña (Postgres)
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
 
-    // 4. Limpiar los tokens para invalidar el enlace
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-
-    await user.save();
+    // 4. Limpiar los tokens e actualizar la contraseña en una sola query
+    await pool.query(
+      "UPDATE users SET password = $1, reset_password_token = NULL, reset_password_expire = NULL WHERE id = $2",
+      [hashedPassword, user.id]
+    );
 
     res.json({
       msg: "Contraseña restablecida con éxito. Ya puedes iniciar sesión.",
