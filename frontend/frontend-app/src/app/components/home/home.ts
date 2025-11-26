@@ -3,11 +3,12 @@ import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { FavoriteData, VideoService } from '../../services/video.service';
 import { CommonModule, NgFor, NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, NgFor, NgIf],
+  imports: [CommonModule, NgFor, NgIf, FormsModule],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -125,6 +126,66 @@ export class Home implements OnInit {
       },
       error: (err) => {
         console.error('Error al desmarcar como favorito:', err);
+      },
+    });
+  }
+
+  //BUSQUEDAS DE VIDEOS Y FAVORITOS
+  searchTermVideos: string = '';
+  searchTermFavorites: string = '';
+
+  /**
+   * Busca videos disponibles por título usando el servicio.
+   * Actualiza this.videos con los resultados.
+   */
+  searchVideos(): void {
+    const query = this.searchTermVideos.trim();
+
+    if (query.length === 0) {
+      // Si la búsqueda está vacía, recarga la lista completa
+      this.loadVideos();
+      return;
+    }
+
+    this.isLoadingVideos = true;
+    this.videoService.searchVideos(query).subscribe({
+      next: (data) => {
+        this.videos = [...data];
+        this.isLoadingVideos = false;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al buscar videos:', err);
+        this.isLoadingVideos = false; // Opcional: Mostrar un array vacío en caso de error de búsqueda
+        this.videos = [];
+      },
+    });
+  }
+  /**
+   * Busca favoritos por título usando el servicio.
+   * Actualiza this.favorites con los resultados.
+   */
+
+  searchFavorites(): void {
+    const query = this.searchTermFavorites.trim();
+
+    if (query.length === 0) {
+      // Si la búsqueda está vacía, recarga la lista completa
+      this.loadVideos(); // loadVideos carga tanto videos como favoritos
+      return;
+    }
+
+    this.isLoadingFavorites = true;
+    this.videoService.searchFavorites(query).subscribe({
+      next: (data) => {
+        this.favorites = [...data];
+        this.isLoadingFavorites = false;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al buscar favoritos:', err);
+        this.isLoadingFavorites = false; // Opcional: Mostrar un array vacío en caso de error de búsqueda
+        this.favorites = [];
       },
     });
   }

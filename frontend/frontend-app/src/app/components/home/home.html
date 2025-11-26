@@ -58,8 +58,15 @@
         <h3 class="mb-3">Listado de Videos</h3>
 
         <div class="input-group mb-4">
-          <input type="text" class="form-control" placeholder="Buscar videos..." />
-          <button class="btn btn-primary" type="button">Buscar</button>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Buscar videos..."
+            [ngModel]="searchTermVideos"
+            (ngModelChange)="searchTermVideos = $event"
+            (keyup.enter)="searchVideos()"
+          />
+          <button class="btn btn-primary" type="button" (click)="searchVideos()">Buscar</button>
         </div>
 
         <div *ngIf="!isLoadingVideos">
@@ -80,8 +87,15 @@
         <h3 class="mb-3">Mis Videos Favoritos</h3>
 
         <div class="input-group mb-4">
-          <input type="text" class="form-control" placeholder="Buscar favoritos..." />
-          <button class="btn btn-primary" type="button">Buscar</button>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Buscar favoritos..."
+            [ngModel]="searchTermFavorites"
+            (ngModelChange)="searchTermFavorites = $event"
+            (keyup.enter)="searchFavorites()"
+          />
+          <button class="btn btn-primary" type="button" (click)="searchFavorites()">Buscar</button>
         </div>
 
         <!-- Mensajes de estado -->

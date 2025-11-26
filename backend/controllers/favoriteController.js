@@ -157,3 +157,55 @@ exports.unmarkAsFavorite = async (req, res) => {
     res.status(500).json({ msg: "Error en servidor" });
   }
 };
+
+// --- BUSCAR VIDEOS POR TÍTULO (NO FAVORITOS) ---
+exports.searchVideosByTitle = async (req, res) => {
+  try {
+    const { q } = req.query; // q es el término de búsqueda
+
+    if (!q) {
+      return res
+        .status(400)
+        .json({ msg: "Se requiere un término de búsqueda (q)" });
+    } // Preparamos el término de búsqueda con wildcards (%) para buscar en cualquier parte del título // ILIKE es la forma insensible a mayúsculas/minúsculas de LIKE en Postgres
+
+    const searchTerm = `%${q}%`;
+
+    const result = await pool.query(
+      // Filtramos por favorite = 0 (videos disponibles) y por título
+      "SELECT id, video_id AS videoid, title, thumbnail, url FROM favorites WHERE favorite = 0 AND title ILIKE $1",
+      [searchTerm]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error en servidor" });
+  }
+};
+
+// --- BUSCAR FAVORITOS POR TÍTULO (SOLO DEL USUARIO) ---
+exports.searchFavoritesByTitle = async (req, res) => {
+  try {
+    const { q } = req.query; // q es el término de búsqueda
+
+    if (!q) {
+      return res
+        .status(400)
+        .json({ msg: "Se requiere un término de búsqueda (q)" });
+    }
+
+    const searchTerm = `%${q}%`;
+
+    const result = await pool.query(
+      // Filtramos por favorite = 1 (favoritos) y user_id = $1 (usuario logueado) y por título
+      "SELECT id, video_id AS videoid, title, thumbnail, url FROM favorites WHERE favorite = 1 AND user_id = $1 AND title ILIKE $2",
+      [req.user, searchTerm]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error en servidor" });
+  }
+};

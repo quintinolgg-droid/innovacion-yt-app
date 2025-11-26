@@ -93,4 +93,24 @@ export class VideoService {
     const headers = this.getAuthHeaders(); // El cuerpo de la petición solo necesita el videoId
     return this.http.put(`${this.apiUrl}/unmark`, { videoId }, { headers });
   }
+
+  /**
+   * GET /api/favorites/search/videos?q=term
+   * Busca videos disponibles por título.
+   */
+  searchVideos(query: string): Observable<FavoriteData[]> {
+    const headers = this.getAuthHeaders();
+    // Añadimos el query parameter 'q'
+    return this.http.get<FavoriteData[]>(`${this.apiUrl}/search/videos?q=${query}`, { headers });
+  }
+
+  /**
+   * GET /api/favorites/search/favorites?q=term
+   * Busca favoritos del usuario por título.
+   */
+  searchFavorites(query: string): Observable<FavoriteData[]> {
+    const headers = this.getAuthHeaders();
+    // Añadimos el query parameter 'q'
+    return this.http.get<FavoriteData[]>(`${this.apiUrl}/search/favorites?q=${query}`, { headers });
+  }
 }

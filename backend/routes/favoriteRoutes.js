@@ -8,6 +8,8 @@ const {
   getVideos,
   markAsFavorite,
   unmarkAsFavorite,
+  searchVideosByTitle,
+  searchFavoritesByTitle,
 } = require("../controllers/favoriteController");
 
 router.post("/add", auth, addFavorite);
@@ -18,5 +20,8 @@ router.put("/mark", auth, markAsFavorite);
 router.put("/unmark", auth, unmarkAsFavorite);
 
 router.delete("/remove/:id", auth, removeFavorite);
+
+router.get("/search/videos", auth, searchVideosByTitle);
+router.get("/search/favorites", auth, searchFavoritesByTitle);
 
 module.exports = router;
