@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  # 1. SERVICIO FRONTEND (ANGULAR)
+  frontend:
+    #  CONTEXTO: Apunta a la carpeta frontend-app (desde la raíz /frontend)
+    build:
+      context: ./frontend/frontend-app
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    container_name: angular_web
+
+  # 2. SERVICIO BACKEND (NODE.JS)
+  backend:
+    #  CONTEXTO: Apunta a la carpeta backend (desde la raíz /frontend)
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    container_name: node_api
+
+    #  ENV_FILE: Apunta al .env que está dentro de la carpeta backend
+    env_file:
+      - ./backend/.env
+
+    #  VOLUMEN: Para desarrollo local (permite que los cambios en tu código Node se vean sin reconstruir)
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+
+    # Nota: depends_on no es necesario si solo tienes frontend y backend, pero es buena práctica si la inicialización importa
+    # depends_on:
+    #   - frontend # Esto podría ser útil si el backend necesita esperar algo del frontend, pero generalmente es al revés.

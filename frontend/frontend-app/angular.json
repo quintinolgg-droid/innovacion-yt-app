@@ -53,6 +53,11 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "static-docker": {
+              "outputMode": "static",
+              "ssr": false,
+              "server": false
             }
           },
           "defaultConfiguration": "production"
