@@ -11,7 +11,7 @@ export const routes: Routes = [
   { path: 'register', component: Register },
   { path: 'forgot-password', component: ForgotPassword },
   {
-    path: 'reset-password/:token', // ⬅️ IMPORTANTE: Esto le dice a Angular que espere un parámetro aquí
+    path: 'reset-password/:token',
     component: ResetPassword,
   },
 ];

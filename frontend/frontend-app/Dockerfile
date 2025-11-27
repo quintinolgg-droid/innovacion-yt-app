@@ -16,23 +16,23 @@ RUN npm install
 COPY . .
 
 # Compila la aplicación Angular.
-# Usamos la configuración 'static-docker' (definida en angular.json)
-# para forzar la compilación como SPA pura y evitar errores de SSR.
-RUN npm run build -- --configuration=static-docker --output-path=./dist/frontend-app
+RUN npm run build -- --configuration=static-docker
 
 # ----------------------------------------------------------------------
 # ETAPA 2: PRODUCTION (Servir con Nginx)
 # ----------------------------------------------------------------------
 FROM nginx:latest AS production
 
-# Limpia la carpeta HTML por defecto de Nginx (Usando sintaxis explícita para evitar errores de formato)
-RUN /bin/sh -c "rm -rf /usr/share/nginx/html/*"
+# Limpia la carpeta HTML por defecto de Nginx
+RUN rm -rf /usr/share/nginx/html/*
 
 # Copia tu archivo de configuración de Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf 
 
 # Copia los archivos compilados desde la etapa 'builder'
-COPY --from=builder /app/dist/frontend-app /usr/share/nginx/html 
+# IMPORTANTE: Verifica que la ruta sea correcta
+# Si Angular genera una carpeta "browser" dentro de dist, usa esa ruta
+COPY --from=builder /app/dist/frontend-app/browser /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
