@@ -1,4 +1,11 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { FavoriteData, VideoService } from '../../services/video.service';
@@ -6,6 +13,9 @@ import { CommonModule, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiUtilsService } from '../../services/ui-utils.service';
 import { Nav } from '../section/nav/nav';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-home',
@@ -14,19 +24,28 @@ import { Nav } from '../section/nav/nav';
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
-export class Home implements OnInit {
+export class Home implements OnInit, AfterViewInit {
+  videoUrlSegura: SafeResourceUrl | undefined;
+
   videos: FavoriteData[] = [];
   favorites: FavoriteData[] = [];
   isLoadingVideos: boolean = false;
   isLoadingFavorites: boolean = false;
   numberFav: number = 0;
 
+  @ViewChild('modalRef') modalElementRef!: ElementRef;
+  showVideo: boolean = false;
+
+  // Guardaremos la instancia del objeto Modal de Bootstrap aquí.
+  private modalBootstrapInstance: any;
+
   constructor(
     private authService: AuthService,
     private router: Router,
     private videoService: VideoService,
     private cd: ChangeDetectorRef,
-    protected uiUtilService: UiUtilsService
+    protected uiUtilService: UiUtilsService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -38,6 +57,42 @@ export class Home implements OnInit {
     this.loadVideos();
 
     this.cd.detectChanges();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.modalElementRef && typeof bootstrap !== 'undefined') {
+      // 1. Creamos la instancia del objeto Modal de Bootstrap
+      this.modalBootstrapInstance = new bootstrap.Modal(this.modalElementRef.nativeElement, {
+        // Opciones (opcionales)
+        keyboard: true, // Permite cerrar con la tecla Esc
+      });
+    }
+  }
+
+  // Método que llamarás desde un botón o alguna lógica.
+  abrirModal(): void {
+    this.showVideo = false;
+    // 2. Llamamos al método show() de la instancia
+    if (this.modalBootstrapInstance) {
+      this.modalBootstrapInstance.show();
+    }
+  }
+
+  // Método opcional para cerrar el modal
+  cerrarModal(): void {
+    if (this.modalBootstrapInstance) {
+      this.modalBootstrapInstance.hide();
+    }
+  }
+
+  generarUrlSegura(idVideo: string): void {
+    // Usar DomSanitizer para marcar la URL como segura para un recurso (iframe src)
+    this.videoUrlSegura = this.sanitizer.bypassSecurityTrustResourceUrl(idVideo);
+    this.abrirModal();
+    setTimeout(() => {
+      this.showVideo = true;
+      this.cd.detectChanges();
+    }, 0);
   }
 
   //Cargar videos desde las APIS
